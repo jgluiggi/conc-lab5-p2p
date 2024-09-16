@@ -46,7 +46,7 @@ func shareFiles(lfCh chan LocalFile) {
 		}
 	}
 
-	for i := 0; i < len(files); i++ {
+	for range files {
 		<-finishedCh
 	}
 	close(lfCh)

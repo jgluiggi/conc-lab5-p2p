@@ -18,7 +18,7 @@ const (
 
 func main() {
 	lfCh := make(chan LocalFile, 10)
-	generateHashes(lfCh)
+	go generateHashes(lfCh)
 	for lf := range lfCh {
 		log.Printf(lf.FilePath)
 	}

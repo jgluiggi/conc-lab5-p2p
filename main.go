@@ -1,41 +1,67 @@
 package main
 
 import (
-    "log"
-    "os"
+	"io"
+	"log"
+	"os"
 	//"google.golang.org/grpc"
 )
 
+type LocalFile struct {
+	FilePath string
+	Hash     int
+}
+
 const (
-    dir = "/tmp/dataset"
+	dirPath = "./tmp/dataset"
 )
 
 func main() {
-    shareFiles()
+	lfCh := make(chan LocalFile, 10)
+	go shareFiles(lfCh)
+	for lf := range lfCh {
+		log.Printf(lf.FilePath)
+	}
 }
 
-func searchFiles() {
+func shareFiles(lfCh chan LocalFile) {
+	dir, err := os.Open(dirPath)
+	if err != nil {
+		log.Fatalf("Erro ao abrir diretório: %s", err)
+		return
+	}
+	defer dir.Close()
+
+	files, err := dir.Readdir(-1)
+	if err != nil {
+		log.Fatalf("Erro ao abrir diretório: %s", err)
+		return
+	}
+
+	for _, f := range files {
+		if !f.IsDir() {
+			filePath := dirPath + "/" + f.Name()
+			hash := generateHash(filePath)
+			lfCh <- LocalFile{FilePath: filePath, Hash: hash}
+		}
+	}
+	close(lfCh)
 }
 
-func shareFiles() {
-    d, err := os.Open(dir)
-    if err != nil {
-        log.Fatalf("Erro ao abrir diretório: ", err)
-        return
-    }
-    defer d.Close()
+func generateHash(filePath string) int {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Fatalf("Erro ao abrir arquivo: %v", err)
+	}
+	defer file.Close()
 
-    files, err := d.Readdir(-1)
-    if err != nil {
-        log.Fatalf("Erro ao abrir diretório: ", err)
-        return
-    }
+	content, err := io.ReadAll(file)
+	if err != nil {
+		log.Fatalf("Erro ao abrir arquivo: %s", err)
+		return 0
+	}
 
-    for _, file := range files {
-        if file.IsDir() {
-            log.Printf("Diretório: %s\n", file.Name())
-        } else {
-            log.Printf("Arquivo: %s\n", file.Name())
-        }
-    }
+	// TODO calcular hash
+
+	return len(string(content))
 }

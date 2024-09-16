@@ -22,6 +22,8 @@ func main() {
 	for lf := range lfCh {
 		log.Printf(lf.FilePath)
 	}
+
+	// GRPC ENDPOINTS
 }
 
 func generateHashes(lfCh chan LocalFile) {

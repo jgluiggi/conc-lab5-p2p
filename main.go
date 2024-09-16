@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"hash"
 	"io"
 	"log"
 	"os"
@@ -9,7 +11,7 @@ import (
 
 type LocalFile struct {
 	FilePath string
-	Hash     int
+	Hash     hash.Hash
 }
 
 const (
@@ -91,9 +93,8 @@ func generateHash(lfCh chan LocalFile, filePath string, finishedCh chan bool) {
 		log.Fatalf("Erro ao abrir arquivo: %s", err)
 	}
 
-	// TODO calcular hash
-
-	hash := len(string(content))
+    hash := sha256.New()
+    hash.Write(content)
 
 	lfCh <- LocalFile{FilePath: filePath, Hash: hash}
 	finishedCh <- true

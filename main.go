@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/sha256"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -94,13 +93,13 @@ func generateHash(lfCh chan LocalFile, filePath string, finishedCh chan bool) {
 		log.Fatalf("Erro ao abrir arquivo: %s", err)
 	}
 
-    fmt.Printf("%T\n", content)
+    log.Printf("%T\n", content)
     hash := sha256.New()
     hash.Write(content)
     byteSlice := (hash.Sum(nil))
 
     hashString := hex.EncodeToString(hash.Sum(nil))
-    fmt.Println(hashString)
+    log.Println(hashString)
 
 	lfCh <- LocalFile{FilePath: filePath, Hash: byteSlice}
 	finishedCh <- true

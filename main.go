@@ -38,17 +38,21 @@ func shareFiles(lfCh chan LocalFile) {
 		return
 	}
 
+	finishedCh := make(chan bool, 10)
 	for _, f := range files {
 		if !f.IsDir() {
 			filePath := dirPath + "/" + f.Name()
-			hash := generateHash(filePath)
-			lfCh <- LocalFile{FilePath: filePath, Hash: hash}
+			go generateHash(lfCh, filePath, finishedCh)
 		}
+	}
+
+	for i := 0; i < len(files); i++ {
+		<-finishedCh
 	}
 	close(lfCh)
 }
 
-func generateHash(filePath string) int {
+func generateHash(lfCh chan LocalFile, filePath string, finishedCh chan bool) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Erro ao abrir arquivo: %v", err)
@@ -58,10 +62,13 @@ func generateHash(filePath string) int {
 	content, err := io.ReadAll(file)
 	if err != nil {
 		log.Fatalf("Erro ao abrir arquivo: %s", err)
-		return 0
+		return
 	}
 
 	// TODO calcular hash
 
-	return len(string(content))
+	hash := len(string(content))
+
+	lfCh <- LocalFile{FilePath: filePath, Hash: hash}
+	finishedCh <- true
 }

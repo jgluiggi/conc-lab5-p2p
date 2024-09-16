@@ -23,7 +23,7 @@ func main() {
 		log.Printf(lf.FilePath)
 	}
 
-	// GRPC ENDPOINTS
+	// TODO GRPC ENDPOINTS
 }
 
 func generateHashes(lfCh chan LocalFile) {

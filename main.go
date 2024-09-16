@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"flag"
 	"io"
 	"log"
@@ -72,6 +73,11 @@ func createServer() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
+
+	// TODO CRIAR ENDPOINTS
+
+	// o server deve receber nome de arquivo e retorna se existe ou não
+	// o server deve listar seus arquivos
 }
 
 func search(hash string) {
@@ -92,10 +98,15 @@ func search(hash string) {
 		log.Fatalf("could not greet: %v", err)
 	}
 	log.Printf("Greeting: %s", r.GetMessage())
+
+	// TODO CRIAR CHAMADAS
+
+	// o cliente deve chamar o server
+	// o cliente deve perguntar se arquivo existe a partir da hash
 }
 
 func discovery() {
-
+	// EXTRA: se sobrar tempo, vamos primeiro fazer com apenas um server
 }
 
 func generateHashes(lfCh chan LocalFile) {
@@ -136,10 +147,13 @@ func generateHash(lfCh chan LocalFile, filePath string, finishedCh chan bool) {
 		log.Fatalf("Erro ao abrir arquivo: %s", err)
 	}
 
-	// TODO calcular hash
+	log.Printf("%T\n", content)
+	hash := sha256.New()
+	hash.Write(content)
+	//byteSlice := (hash.Sum(nil))
 
-	hash := string(len(string(content)))
+	// hash := string(len(string(content)))
 
-	lfCh <- LocalFile{FilePath: filePath, Hash: hash}
+	lfCh <- LocalFile{FilePath: filePath, Hash: "byteSlice"}
 	finishedCh <- true
 }

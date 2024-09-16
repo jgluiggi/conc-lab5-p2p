@@ -17,13 +17,40 @@ const (
 )
 
 func main() {
+	args := os.Args[1:]
+
+	if len(args) >= 1 {
+
+		if len(args) == 1 && args[0] == "server" {
+			server()
+		} else if len(args) == 2 && args[0] == "search" {
+			search(args[1])
+		} else if len(args) == 1 && args[1] == "discovery" {
+			discovery()
+		} else {
+			log.Fatalf("Comando inválido")
+		}
+
+	} else {
+		log.Fatalf("Comando inválido")
+	}
+}
+
+func server() {
 	lfCh := make(chan LocalFile, 10)
 	go generateHashes(lfCh)
 	for lf := range lfCh {
 		log.Printf(lf.FilePath)
 	}
-
 	// TODO GRPC ENDPOINTS
+}
+
+func search(hash string) {
+
+}
+
+func discovery() {
+
 }
 
 func generateHashes(lfCh chan LocalFile) {

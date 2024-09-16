@@ -18,13 +18,13 @@ const (
 
 func main() {
 	lfCh := make(chan LocalFile, 10)
-	go shareFiles(lfCh)
+	generateHashes(lfCh)
 	for lf := range lfCh {
 		log.Printf(lf.FilePath)
 	}
 }
 
-func shareFiles(lfCh chan LocalFile) {
+func generateHashes(lfCh chan LocalFile) {
 	dir, err := os.Open(dirPath)
 	if err != nil {
 		log.Fatalf("Erro ao abrir diretório: %s", err)

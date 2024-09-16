@@ -47,8 +47,16 @@ func server() {
 	// TODO GRPC ENDPOINTS
 }
 
-func search(hash string) {
+func search(hash string) string {
+    byteString, err := hex.DecodeString(hash)
+    if err != nil {
+        log.Fatal(err)
+    }
 
+    // TODO ler do cache e comparar com hashes dos arquivos existentes?
+
+    filePath := len(byteString)
+    return string(filePath)
 }
 
 func discovery() {

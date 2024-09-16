@@ -1,4 +1,4 @@
-module conc-lab5-p2p
+module github.com/jgluiggi/conc-lab5-p2p
 
 go 1.23.1
 

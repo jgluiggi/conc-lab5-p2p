@@ -2,16 +2,17 @@ package main
 
 import (
 	"crypto/sha256"
-	"hash"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"encoding/hex"
 	//"google.golang.org/grpc"
 )
 
 type LocalFile struct {
 	FilePath string
-	Hash     hash.Hash
+	Hash     []byte
 }
 
 const (
@@ -93,9 +94,14 @@ func generateHash(lfCh chan LocalFile, filePath string, finishedCh chan bool) {
 		log.Fatalf("Erro ao abrir arquivo: %s", err)
 	}
 
+    fmt.Printf("%T\n", content)
     hash := sha256.New()
     hash.Write(content)
+    byteSlice := (hash.Sum(nil))
 
-	lfCh <- LocalFile{FilePath: filePath, Hash: hash}
+    hashString := hex.EncodeToString(hash.Sum(nil))
+    fmt.Println(hashString)
+
+	lfCh <- LocalFile{FilePath: filePath, Hash: byteSlice}
 	finishedCh <- true
 }

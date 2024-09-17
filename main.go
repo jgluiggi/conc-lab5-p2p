@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"io"
 	"log"
@@ -56,10 +57,10 @@ func main() {
 }
 
 func createServer() {
-	lfCh := make(chan LocalFile, 10)
-	go generateHashes(lfCh)
-	for lf := range lfCh {
-		log.Printf(lf.FilePath)
+	hashes := generateHashes()
+
+	for _, it := range hashes {
+		log.Printf(it.FilePath + " " + it.Hash + "\n")
 	}
 
 	lis, err := net.Listen("tcp", ":50051")
@@ -109,7 +110,7 @@ func discovery() {
 	// EXTRA: se sobrar tempo, vamos primeiro fazer com apenas um server
 }
 
-func generateHashes(lfCh chan LocalFile) {
+func generateHashes() []LocalFile {
 	dir, err := os.Open(dirPath)
 	if err != nil {
 		log.Fatalf("Erro ao abrir diretório: %s", err)
@@ -121,21 +122,24 @@ func generateHashes(lfCh chan LocalFile) {
 		log.Fatalf("Erro ao abrir diretório: %s", err)
 	}
 
-	finishedCh := make(chan bool, 10)
+	lfCh := make(chan LocalFile, 10)
 	for _, f := range files {
 		if !f.IsDir() {
 			filePath := dirPath + "/" + f.Name()
-			go generateHash(lfCh, filePath, finishedCh)
+			go generateHash(lfCh, filePath)
 		}
 	}
 
-	for range files {
-		<-finishedCh
+	hashes := make([]LocalFile, len(files))
+	for i, _ := range files {
+		hashes[i] = <-lfCh
 	}
 	close(lfCh)
+
+	return hashes
 }
 
-func generateHash(lfCh chan LocalFile, filePath string, finishedCh chan bool) {
+func generateHash(lfCh chan LocalFile, filePath string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatalf("Erro ao abrir arquivo: %v", err)
@@ -147,13 +151,9 @@ func generateHash(lfCh chan LocalFile, filePath string, finishedCh chan bool) {
 		log.Fatalf("Erro ao abrir arquivo: %s", err)
 	}
 
-	log.Printf("%T\n", content)
 	hash := sha256.New()
 	hash.Write(content)
-	//byteSlice := (hash.Sum(nil))
+	encoded := hex.EncodeToString(hash.Sum(nil))
 
-	// hash := string(len(string(content)))
-
-	lfCh <- LocalFile{FilePath: filePath, Hash: "byteSlice"}
-	finishedCh <- true
+	lfCh <- LocalFile{FilePath: filePath, Hash: encoded}
 }

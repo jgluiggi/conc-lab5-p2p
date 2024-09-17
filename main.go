@@ -23,8 +23,6 @@ type server struct {
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(_ context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	hashes := generateHashes()
-
 	hash := in.GetName()
 	res := ""
 	for _, it := range hashes {
@@ -44,6 +42,10 @@ type LocalFile struct {
 
 const (
 	dirPath = "./tmp/dataset"
+)
+
+var (
+	hashes []LocalFile
 )
 
 func main() {
@@ -67,7 +69,7 @@ func main() {
 }
 
 func createServer() {
-	hashes := generateHashes()
+	hashes = generateHashes()
 
 	for _, it := range hashes {
 		log.Printf(it.FilePath + " " + it.Hash + "\n")

@@ -23,8 +23,18 @@ type server struct {
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(_ context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+	hashes := generateHashes()
+
+	hash := in.GetName()
+	res := ""
+	for _, it := range hashes {
+		if it.Hash == hash {
+			res = it.FilePath
+		}
+	}
+
 	log.Printf("Received: %v", in.GetName())
-	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
+	return &pb.HelloReply{Message: res}, nil
 }
 
 type LocalFile struct {
@@ -94,7 +104,7 @@ func search(hash string) {
 	c := pb.NewGreeterClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String("name", "world", "Name to greet")})
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String("name", hash, "Name to greet")})
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}

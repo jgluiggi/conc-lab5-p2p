@@ -35,7 +35,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
     p, _ := peer.FromContext(ctx)
 	log.Printf("Received: %v", in.GetName())
 	log.Printf("Received from: %v", p.Addr.String())
-	return &pb.HelloReply{Message: res}, nil
+	return &pb.HelloReply{Message: res + " " + p.LocalAddr.String()}, nil
 }
 
 type LocalFile struct {

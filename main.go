@@ -13,6 +13,7 @@ import (
 
 	pb "github.com/jgluiggi/conc-lab5-p2p/helloworld"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -22,7 +23,7 @@ type server struct {
 }
 
 // SayHello implements helloworld.GreeterServer
-func (s *server) SayHello(_ context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	hash := in.GetName()
 	res := ""
 	for _, it := range hashes {
@@ -31,7 +32,9 @@ func (s *server) SayHello(_ context.Context, in *pb.HelloRequest) (*pb.HelloRepl
 		}
 	}
 
+    p, _ := peer.FromContext(ctx)
 	log.Printf("Received: %v", in.GetName())
+	log.Printf("Received from: %v", p.Addr.String())
 	return &pb.HelloReply{Message: res}, nil
 }
 

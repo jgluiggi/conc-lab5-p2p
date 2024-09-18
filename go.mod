@@ -1,6 +1,6 @@
 module github.com/jgluiggi/conc-lab5-p2p
 
-go 1.23.1
+go 1.22.1
 
 require (
 	golang.org/x/net v0.26.0 // indirect

@@ -1,0 +1,10 @@
+version: '3'
+services:
+  peer1:
+    build: .
+  peer2:
+    build: .
+  peer3:
+    build: .
+  peer4:
+    build: .

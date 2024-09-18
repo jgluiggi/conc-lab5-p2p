@@ -21,3 +21,11 @@
     - criar serviço (ip fixo) de discovery dos peers da rede local.
     - peers devem se inscrever no discovery.
     - discovery deve retornar a lista de peers.
+
+## Rodando
+
+tendo tanto docker quanto docker-compose instalados, rode:
+
+```docker compose up```
+
+para rodar 4 contêiners que rodam a aplicação e se descobrem (alegadamente)

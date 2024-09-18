@@ -60,7 +60,7 @@ func main() {
 			createServer()
 		} else if len(args) == 2 && args[0] == "search" {
 			search(args[1])
-		} else if len(args) == 1 && args[1] == "discovery" {
+		} else if len(args) == 1 && args[0] == "discovery" {
 			discovery()
 		} else {
 			log.Fatalf("Comando inválido")
@@ -146,7 +146,7 @@ func generateHashes() []LocalFile {
 	}
 
 	hashes := make([]LocalFile, len(files))
-	for i, _ := range files {
+	for i := range files {
 		hashes[i] = <-lfCh
 	}
 	close(lfCh)

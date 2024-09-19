@@ -7,6 +7,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -57,16 +58,16 @@ func main() {
 	if len(args) >= 1 {
 
 		if len(args) == 1 && args[0] == "server" {
-			discovery()
-			for i := range machines {
-				log.Printf(machines[i])
-			}
 			var wg sync.WaitGroup
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
 				createServer()
 			}()
+			discovery()
+			for i := range machines {
+				log.Printf(machines[i])
+			}
 			wg.Wait()
 		} else if len(args) == 2 && args[0] == "search" {
 			search(args[1])
@@ -137,10 +138,8 @@ func search(hash string) {
 }
 
 func discovery() {
-	ips, err := getSubnetMachines()
-	if err != nil {
-		log.Fatal(err)
-	}
+    ipChan := make(chan string)
+    ips := scanSubnet(ipChan)
 	machines = ips
 }
 
@@ -192,35 +191,61 @@ func generateHash(lfCh chan LocalFile, filePath string) {
 	lfCh <- LocalFile{FilePath: filePath, Hash: encoded}
 }
 
-func getSubnetMachines() ([]string, error) {
-	interfaces, err := net.Interfaces()
+func scanSubnet(ipChan chan string) []string {
+	interfaces, err := net.InterfaceAddrs()
 	if err != nil {
-		return nil, err
+		log.Fatalf("Erro ao receber interfaces %v", err)
+		return nil
 	}
 
-	var ips []string
-	for _, i := range interfaces {
-		addrs, err := i.Addrs()
-		if err != nil {
-			return nil, err
-		}
+    var ipv4Interfaces []net.Addr
+    for _, i := range interfaces {
+        if addr, ok := i.(*net.IPNet); ok && addr.IP.To4() != nil {
+            ipv4Interfaces = append(ipv4Interfaces, i)
+        }
+    }
 
-		for _, a := range addrs {
-			var ip net.IP
-			switch v := a.(type) {
-			case *net.IPNet:
-				ip = v.IP
-			case *net.IPAddr:
-				ip = v.IP
-			}
+    var wg sync.WaitGroup
+	for _, i := range ipv4Interfaces {
+        wg.Add(1)
+        go func () {
+            defer wg.Done()
+            switch v := i.(type) {
+            case *net.IPNet:
+                if v.IP.To4() != nil {
+                    ip := v.IP.To4()
+                    mask := v.Mask
+                    subnet := ip.Mask(mask)
 
-			if ip != nil {
-				if ip.To4() != nil {
-					ips = append(ips, ip.String())
-				}
-			}
-		}
+                    for i := 0; i <= 255-1; i++ {
+                        ip := subnet.To4()
+                        ip[3] = byte(i)
+                        host := ip.String()
+                        if isPortOpen(host, 50051) {
+                            ipChan <- host
+                        }                     
+                    }
+                }
+            }
+        }()
 	}
+    go func(){
+        wg.Wait()
+        close(ipChan)
+    }()
+    var ips []string
+    for ip := range ipChan {
+        ips = append(ips, ip)
+    }
+    return ips
+}
 
-	return ips, nil
+func isPortOpen(host string, port int) bool {
+	timeout := time.Millisecond * 10
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), timeout)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
 }

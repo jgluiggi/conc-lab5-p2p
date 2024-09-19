@@ -2,9 +2,21 @@ version: '3'
 services:
   peer1:
     build: .
+    networks:
+      - peernet
   peer2:
     build: .
+    networks:
+      - peernet
   peer3:
     build: .
+    networks:
+      - peernet
   peer4:
     build: .
+    networks:
+      - peernet
+
+networks:
+  peernet:
+    driver: bridge

@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	pb "github.com/jgluiggi/conc-lab5-p2p/helloworld"
@@ -58,13 +59,17 @@ func main() {
 	if len(args) >= 1 {
 
 		if len(args) == 1 && args[0] == "server" {
-			go discovery()
-			go createServer()
+			discovery()
 			for i := range machines {
 				log.Printf(machines[i])
 			}
-			for {
-			}
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				createServer()
+			}()
+			wg.Wait()
 		} else if len(args) == 2 && args[0] == "search" {
 			search(args[1])
 		} else if len(args) == 1 && args[0] == "discovery" {

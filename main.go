@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
+	"fmt"
 	"io"
 	"log"
-	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -64,7 +64,7 @@ func main() {
 				defer wg.Done()
 				createServer()
 			}()
-            time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 3)
 			discovery()
 			for i := range machines {
 				log.Printf(machines[i])
@@ -104,17 +104,17 @@ func createServer() {
 }
 
 func search(hash string) {
-    file, err := os.Open("cache.txt")
-    if err == nil {
-        defer file.Close()
-        byteValue, _ := io.ReadAll(file)
-        machines = strings.Split(string(byteValue), "\n")
-    } else {
-        discovery()
-    }
+	file, err := os.Open("cache.txt")
+	if err == nil {
+		defer file.Close()
+		byteValue, _ := io.ReadAll(file)
+		machines = strings.Split(string(byteValue), "\n")
+	} else {
+		discovery()
+	}
 
 	var wg sync.WaitGroup
-    var mutex sync.Mutex
+	var mutex sync.Mutex
 	for _, i := range machines {
 		wg.Add(1)
 		go func(ip string) {
@@ -131,12 +131,12 @@ func search(hash string) {
 			c := pb.NewGreeterClient(conn)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
-            mutex.Lock()
+			mutex.Lock()
 			r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String(ip, hash, "Name to greet")})
 			if err != nil {
 				log.Fatalf("could not greet: %v", err)
 			}
-            mutex.Unlock()
+			mutex.Unlock()
 			message := r.GetMessage()
 			if strings.Contains(message, "file") {
 				log.Printf("RECEIVED FILE:\t%s", message)
@@ -149,15 +149,15 @@ func search(hash string) {
 }
 
 func discovery() {
-    ipChan := make(chan string)
-    ips := scanSubnet(ipChan)
+	ipChan := make(chan string)
+	ips := scanSubnet(ipChan)
 	machines = ips
 
-    f, _ := os.Create("cache.txt")
-    defer f.Close()
-    for _, ip := range ips {
-        f.WriteString(ip + "\n")
-    }
+	f, _ := os.Create("cache.txt")
+	defer f.Close()
+	for _, ip := range ips {
+		f.WriteString(ip + "\n")
+	}
 }
 
 func generateHashes() []LocalFile {
@@ -215,46 +215,46 @@ func scanSubnet(ipChan chan string) []string {
 		return nil
 	}
 
-    var ipv4Interfaces []net.Addr
-    for _, i := range interfaces {
-        if addr, ok := i.(*net.IPNet); ok && addr.IP.To4() != nil {
-            ipv4Interfaces = append(ipv4Interfaces, i)
-        }
-    }
-
-    var wg sync.WaitGroup
-	for _, i := range ipv4Interfaces {
-        wg.Add(1)
-        go func () {
-            defer wg.Done()
-            switch v := i.(type) {
-            case *net.IPNet:
-                if v.IP.To4() != nil {
-                    ip := v.IP.To4()
-                    mask := v.Mask
-                    subnet := ip.Mask(mask)
-
-                    for i := 0; i <= 255-1; i++ {
-                        ip := subnet.To4()
-                        ip[3] = byte(i)
-                        host := ip.String()
-                        if isPortOpen(host, 50051) && !strings.Contains(host, "127.0.0") {
-                            ipChan <- host
-                        }                     
-                    }
-                }
-            }
-        }()
+	var ipv4Interfaces []net.Addr
+	for _, i := range interfaces {
+		if addr, ok := i.(*net.IPNet); ok && addr.IP.To4() != nil {
+			ipv4Interfaces = append(ipv4Interfaces, i)
+		}
 	}
-    go func(){
-        wg.Wait()
-        close(ipChan)
-    }()
-    var ips []string
-    for ip := range ipChan {
-        ips = append(ips, ip)
-    }
-    return ips
+
+	var wg sync.WaitGroup
+	for _, i := range ipv4Interfaces {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			switch v := i.(type) {
+			case *net.IPNet:
+				if v.IP.To4() != nil {
+					ip := v.IP.To4()
+					mask := v.Mask
+					subnet := ip.Mask(mask)
+
+					for i := 0; i <= 255-1; i++ {
+						ip := subnet.To4()
+						ip[3] = byte(i)
+						host := ip.String()
+						if isPortOpen(host, 50051) && !strings.Contains(host, "127.0.0") {
+							ipChan <- host
+						}
+					}
+				}
+			}
+		}()
+	}
+	go func() {
+		wg.Wait()
+		close(ipChan)
+	}()
+	var ips []string
+	for ip := range ipChan {
+		ips = append(ips, ip)
+	}
+	return ips
 }
 
 func isPortOpen(host string, port int) bool {

@@ -5,17 +5,17 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"flag"
-	"strings"
 	"io"
 	"log"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	pb "github.com/jgluiggi/conc-lab5-p2p/helloworld"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/peer"
 )
 
 // createServer is used to implement helloworld.GreeterServer.
@@ -33,7 +33,7 @@ func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloRe
 		}
 	}
 
-    p, _ := peer.FromContext(ctx)
+	p, _ := peer.FromContext(ctx)
 	log.Printf("RECEIVED: %v FROM %v", in.GetName(), p.Addr.String())
 	return &pb.HelloReply{Message: res + " " + p.LocalAddr.String()}, nil
 }
@@ -48,8 +48,8 @@ const (
 )
 
 var (
-	hashes []LocalFile
-    machines []string
+	hashes   []LocalFile
+	machines []string
 )
 
 func main() {
@@ -60,10 +60,11 @@ func main() {
 		if len(args) == 1 && args[0] == "server" {
 			go discovery()
 			go createServer()
-            for i := range machines {
-                log.Printf(machines[i])
-            }
-            for {}
+			for i := range machines {
+				log.Printf(machines[i])
+			}
+			for {
+			}
 		} else if len(args) == 2 && args[0] == "search" {
 			search(args[1])
 		} else if len(args) == 1 && args[0] == "discovery" {
@@ -103,41 +104,41 @@ func createServer() {
 }
 
 func search(hash string) {
-    var ips []string
+	var ips []string
 	file, err := os.Open("cache.txt")
-    if err == nil {
-        defer file.Close()
-        byteValue, _ := io.ReadAll(file)
-        ips = strings.Split(string(byteValue), "\n")
-    } else {
-        discovery()
-    }
+	if err == nil {
+		defer file.Close()
+		byteValue, _ := io.ReadAll(file)
+		ips = strings.Split(string(byteValue), "\n")
+	} else {
+		discovery()
+	}
 
-    for _, i := range ips {
-        machine := i + ":50051"
-        conn, err := grpc.NewClient(machine, grpc.WithTransportCredentials(insecure.NewCredentials()))
-        if err != nil {
-            log.Fatalf("did not connect: %v", err)
-        }
+	for _, i := range ips {
+		machine := i + ":50051"
+		conn, err := grpc.NewClient(machine, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatalf("did not connect: %v", err)
+		}
 
-        //log.Printf("conn.GetState(): %v\n", conn.GetState())
+		//log.Printf("conn.GetState(): %v\n", conn.GetState())
 
-        defer conn.Close()
+		defer conn.Close()
 
-        c := pb.NewGreeterClient(conn)
-        ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-        defer cancel()
-        r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String(i, hash, "Name to greet")})
-        if err != nil {
-            log.Fatalf("could not greet: %v", err)
-        }
-        message := r.GetMessage()
-        if strings.Contains(message, "file") {
-            log.Printf("RECEIVED FILE:\t%s", message)
-        } else {
-            log.Printf("RECEIVED NOTHING:\t%s", message)
-        }
-    }
+		c := pb.NewGreeterClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String(i, hash, "Name to greet")})
+		if err != nil {
+			log.Fatalf("could not greet: %v", err)
+		}
+		message := r.GetMessage()
+		if strings.Contains(message, "file") {
+			log.Printf("RECEIVED FILE:\t%s", message)
+		} else {
+			log.Printf("RECEIVED NOTHING:\t%s", message)
+		}
+	}
 
 	// TODO CRIAR CHAMADAS
 
@@ -146,17 +147,17 @@ func search(hash string) {
 }
 
 func discovery() {
-    ips, err := getSubnetMachines()
+	ips, err := getSubnetMachines()
 	if err != nil {
 		log.Fatal(err)
 	}
-    machines = ips
+	machines = ips
 
-    f, _ := os.Create("cache.txt")
-    defer f.Close()
-    for _, ip := range ips {
-        f.WriteString(ip + "\n")
-    }
+	f, _ := os.Create("cache.txt")
+	defer f.Close()
+	for _, ip := range ips {
+		f.WriteString(ip + "\n")
+	}
 }
 
 func generateHashes() []LocalFile {

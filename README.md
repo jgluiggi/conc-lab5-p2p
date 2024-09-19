@@ -28,4 +28,14 @@ tendo tanto docker quanto docker-compose instalados, rode:
 
 ```docker compose up```
 
-para rodar 4 contêiners que rodam a aplicação e se descobrem (alegadamente)
+para rodar 4 contêiners que rodam a aplicação e se descobrem. ~~(alegadamente)~~
+após isso, spawne um shell dentro de um dos peers (peer1, peer2, peer3 ou peer4) com o seguinte
+comando:
+
+```docker compose exec peerX sh```
+
+dentro do contêiner, rode:
+
+```go run main.go search $filehash```
+
+para procurar algum arquivo que tenha seu hash igual ao enviado na pesquisa nos outros peers.

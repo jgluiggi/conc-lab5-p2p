@@ -64,6 +64,7 @@ func main() {
 				defer wg.Done()
 				createServer()
 			}()
+            time.Sleep(time.Second * 3)
 			discovery()
 			for i := range machines {
 				log.Printf(machines[i])
@@ -103,10 +104,18 @@ func createServer() {
 }
 
 func search(hash string) {
-	ips := machines
+    file, err := os.Open("cache.txt")
+    if err == nil {
+        defer file.Close()
+        byteValue, _ := io.ReadAll(file)
+        machines = strings.Split(string(byteValue), "\n")
+    } else {
+        discovery()
+    }
 
 	var wg sync.WaitGroup
-	for _, i := range ips {
+    var mutex sync.Mutex
+	for _, i := range machines {
 		wg.Add(1)
 		go func(ip string) {
 			defer wg.Done()
@@ -122,10 +131,12 @@ func search(hash string) {
 			c := pb.NewGreeterClient(conn)
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 			defer cancel()
+            mutex.Lock()
 			r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String(ip, hash, "Name to greet")})
 			if err != nil {
 				log.Fatalf("could not greet: %v", err)
 			}
+            mutex.Unlock()
 			message := r.GetMessage()
 			if strings.Contains(message, "file") {
 				log.Printf("RECEIVED FILE:\t%s", message)
@@ -141,6 +152,12 @@ func discovery() {
     ipChan := make(chan string)
     ips := scanSubnet(ipChan)
 	machines = ips
+
+    f, _ := os.Create("cache.txt")
+    defer f.Close()
+    for _, ip := range ips {
+        f.WriteString(ip + "\n")
+    }
 }
 
 func generateHashes() []LocalFile {
@@ -221,7 +238,7 @@ func scanSubnet(ipChan chan string) []string {
                         ip := subnet.To4()
                         ip[3] = byte(i)
                         host := ip.String()
-                        if isPortOpen(host, 50051) {
+                        if isPortOpen(host, 50051) && !strings.Contains(host, "127.0.0") {
                             ipChan <- host
                         }                     
                     }

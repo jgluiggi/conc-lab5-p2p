@@ -19,12 +19,10 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-// createServer is used to implement helloworld.GreeterServer.
 type server struct {
 	pb.UnimplementedGreeterServer
 }
 
-// SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	hash := in.GetName()
 	res := ""
@@ -101,54 +99,41 @@ func createServer() {
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
-
-	// TODO CRIAR ENDPOINTS
-
-	// o server deve receber nome de arquivo e retorna se existe ou não
-	// o server deve listar seus arquivos
 }
 
 func search(hash string) {
-	var ips []string
-	file, err := os.Open("cache.txt")
-	if err == nil {
-		defer file.Close()
-		byteValue, _ := io.ReadAll(file)
-		ips = strings.Split(string(byteValue), "\n")
-	} else {
-		discovery()
-	}
+	ips := machines
 
+	var wg sync.WaitGroup
 	for _, i := range ips {
-		machine := i + ":50051"
-		conn, err := grpc.NewClient(machine, grpc.WithTransportCredentials(insecure.NewCredentials()))
-		if err != nil {
-			log.Fatalf("did not connect: %v", err)
-		}
+		wg.Add(1)
+		go func(ip string) {
+			defer wg.Done()
 
-		//log.Printf("conn.GetState(): %v\n", conn.GetState())
+			machine := ip + ":50051"
+			conn, err := grpc.NewClient(machine, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			if err != nil {
+				log.Printf("did not connect: %v", err)
+				return
+			}
+			defer conn.Close()
 
-		defer conn.Close()
-
-		c := pb.NewGreeterClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String(i, hash, "Name to greet")})
-		if err != nil {
-			log.Fatalf("could not greet: %v", err)
-		}
-		message := r.GetMessage()
-		if strings.Contains(message, "file") {
-			log.Printf("RECEIVED FILE:\t%s", message)
-		} else {
-			log.Printf("RECEIVED NOTHING:\t%s", message)
-		}
+			c := pb.NewGreeterClient(conn)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			r, err := c.SayHello(ctx, &pb.HelloRequest{Name: *flag.String(ip, hash, "Name to greet")})
+			if err != nil {
+				log.Fatalf("could not greet: %v", err)
+			}
+			message := r.GetMessage()
+			if strings.Contains(message, "file") {
+				log.Printf("RECEIVED FILE:\t%s", message)
+			} else {
+				log.Printf("RECEIVED NOTHING:\t%s", message)
+			}
+		}(i)
 	}
-
-	// TODO CRIAR CHAMADAS
-
-	// o cliente deve chamar o server
-	// o cliente deve perguntar se arquivo existe a partir da hash
+	wg.Wait()
 }
 
 func discovery() {
@@ -157,12 +142,6 @@ func discovery() {
 		log.Fatal(err)
 	}
 	machines = ips
-
-	f, _ := os.Create("cache.txt")
-	defer f.Close()
-	for _, ip := range ips {
-		f.WriteString(ip + "\n")
-	}
 }
 
 func generateHashes() []LocalFile {

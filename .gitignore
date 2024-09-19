@@ -26,3 +26,6 @@ go.work.sum
 
 # temp dir
 tmp
+
+# peer cache
+cache.txt

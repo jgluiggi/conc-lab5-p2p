@@ -15,9 +15,6 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Build the Go application
-RUN go build -o main main.go
-
 # Expose the port
 EXPOSE 50051 50053
 
